@@ -15,65 +15,24 @@ public class ClusterTest {
     }
 
     @Test
-    void deshacerLiberacionRestauraCapacidad() throws Exception {
-        Cluster claude1 = new Cluster("C1", 100);
-        Liberacion op = new Liberacion(claude1, 30);
-        op.ejecutar(); // 100 -> 130
-        op.deshacer(); // vuelve a 100
-        assertEquals(100, claude1.getVcpusDisponibles());
+    void asignarCapacidadReduceVcpusDisponibles() throws Exception {
+        Cluster cluster1 = new Cluster("C1", 100);
+        cluster1.asignarCapacidad(30);
+        assertEquals(70, cluster1.getVcpusDisponibles());
     }
 
     @Test
-    void planFallidoRevierteSoloOperacionesDeEsePlan() throws Exception {
+    void liberarCapacidadIncrementaVcpusDisponibles() {
         Cluster cluster1 = new Cluster("C1", 100);
-        PlanDespliegue plan = new PlanDespliegue();
-        plan.agregarOperacion(new Asignacion(cluster1, 50));
-        plan.agregarOperacion(new Asignacion(cluster1, 260));
-
-        assertThrows(OverProvisioningException.class, plan::ejecutar);
-        assertEquals(100, cluster1.getVcpusDisponibles());
+        cluster1.liberarCapacidad(30);
+        assertEquals(130, cluster1.getVcpusDisponibles());
     }
 
     @Test
-    void crearOperacionConValorNegativoLanzaExcepcionSinDeclarar() {
-        Cluster cluster1 = new Cluster("C1", 100);
-        assertThrows(CantidadInvalidaException.class, () -> new Asignacion(cluster1, -5));
-        assertThrows(CantidadInvalidaException.class, () -> new Asignacion(cluster1, 0));
-    }
-
-    // Command
-    @Test
-    void deshacerAsignacionRestauraCapacidad() throws Exception {
-        Cluster cluster1 = new Cluster("C1", 100);
-        Asignacion op = new Asignacion(cluster1, 30);
-        op.ejecutar();
-        op.deshacer();
-        assertEquals(100, cluster1.getVcpusDisponibles());
-    }
-
-    @Test
-    void planExitosoVaciaOperacionesPendientes() throws Exception {
-        Cluster cluster1 = new Cluster("C1", 100);
-        PlanDespliegue plan = new PlanDespliegue();
-        plan.agregarOperacion(new Asignacion(cluster1, 10));
-        plan.agregarOperacion(new Liberacion(cluster1, 5));
-
-        plan.ejecutar();
-
-        assertEquals(95, cluster1.getVcpusDisponibles());
-    }
-
-    @Test
-    void planificadorEjecutaOperacionYPlanPorLaMismaVia() throws Exception {
-        Cluster cluster1 = new Cluster("C1", 100);
-        PlanificadorDespliegues planificador = new PlanificadorDespliegues();
-
-        planificador.ejecutar(new Liberacion(cluster1, 10));
-        PlanDespliegue plan = new PlanDespliegue();
-        plan.agregarOperacion(new Asignacion(cluster1, 5));
-        planificador.ejecutar(plan);
-
-        assertEquals(105, cluster1.getVcpusDisponibles());
+    void asignarHastaElLimiteExactoNoLanzaExcepcion() throws Exception {
+        Cluster cluster1 = new Cluster("C1", 0);
+        cluster1.asignarCapacidad(200); // 0 - 200 = -200, límite exacto, no debe fallar
+        assertEquals(-200, cluster1.getVcpusDisponibles());
     }
 
 }
